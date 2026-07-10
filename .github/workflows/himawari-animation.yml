@@ -1,0 +1,30 @@
+name: Post Himawari Animation
+
+on:
+  schedule:
+    # Every 3 hours. Each run covers a ~2 hour window of frames (see
+    # ANIMATION_FRAME_COUNT below), so runs overlap slightly rather than
+    # leaving gaps.
+    - cron: '0 */3 * * *'
+  workflow_dispatch: {}   # manual "Run workflow" button in the Actions tab
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pillow
+
+      - name: Build and post animation
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          # Uncomment to override defaults (12 frames \u2248 2 hours, 150ms/frame):
+          # ANIMATION_FRAME_COUNT: '18'
+          # ANIMATION_FRAME_DURATION_MS: '120'
+        run: python post_himawari_animation.py
