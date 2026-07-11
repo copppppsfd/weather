@@ -49,6 +49,7 @@ BRIGHTNESS_PERCENTILE = float(os.environ.get("STORM_BRIGHTNESS_PERCENTILE", "97"
 MIN_AREA_FRAC = float(os.environ.get("STORM_MIN_AREA_FRAC", "0.0004"))   # ignore tiny specks/noise
 MAX_AREA_FRAC = float(os.environ.get("STORM_MAX_AREA_FRAC", "0.06"))     # ignore huge fronts/cloud bands
 MIN_CIRCULARITY = float(os.environ.get("STORM_MIN_CIRCULARITY", "0.55"))  # 1.0 = perfect circle
+ERODE_KERNEL_SIZE = int(os.environ.get("STORM_ERODE_KERNEL_SIZE", "13"))  # strips thin spiral bands
 
 # Tracking tuning
 MAX_MATCH_DIST_FRAC = float(os.environ.get("STORM_MAX_MATCH_DIST_FRAC", "0.08"))  # fraction of image diagonal
@@ -110,21 +111,65 @@ def detect_candidates(image_bytes: bytes):
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Original (pre-erosion) contours -- used for the final reported size and
+    # position, so a passing candidate is drawn at its true visual extent.
+    orig_contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # A large, well-organized storm's cloud shield is usually one connected
+    # blob that includes long, thin spiral/feeder bands trailing off the
+    # dense core. Measuring circularity on that whole shape badly
+    # underscores it (a comma shape has a huge perimeter for its area).
+    # Eroding with a bigger kernel strips those thin bands away, leaving
+    # just the solid core -- which is what we actually want to shape-check.
+    erode_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ERODE_KERNEL_SIZE, ERODE_KERNEL_SIZE))
+    eroded = cv2.erode(mask, erode_kernel, iterations=1)
+    eroded_contours, _ = cv2.findContours(eroded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     candidates = []
-    for c in contours:
-        area = cv2.contourArea(c)
+    matched_orig_indices = set()
+    for ec in eroded_contours:
+        earea = cv2.contourArea(ec)
+        if earea < MIN_AREA_FRAC * total_area:
+            continue
+
+        # Convex hull circularity instead of raw contour circularity: real
+        # cloud edges are jagged/fractal, which inflates raw perimeter and
+        # tanks circularity even for a visually round cluster. The hull
+        # smooths over small inward notches without hiding a genuinely
+        # elongated/comma shape.
+        hull = cv2.convexHull(ec)
+        hull_area = cv2.contourArea(hull)
+        hull_perimeter = cv2.arcLength(hull, True)
+        if hull_perimeter == 0:
+            continue
+        circularity = 4 * np.pi * hull_area / (hull_perimeter ** 2)
+        if circularity < MIN_CIRCULARITY:
+            continue
+
+        M = cv2.moments(ec)
+        if M["m00"] == 0:
+            continue
+        seed_x, seed_y = M["m10"] / M["m00"], M["m01"] / M["m00"]
+
+        # Map this eroded core back to its original (pre-erosion) blob, so
+        # we report/draw the storm's actual size, not just the shrunken core.
+        orig_idx, orig_c = None, None
+        for idx, oc in enumerate(orig_contours):
+            if idx in matched_orig_indices:
+                continue
+            if cv2.pointPolygonTest(oc, (seed_x, seed_y), False) >= 0:
+                orig_idx, orig_c = idx, oc
+                break
+        if orig_c is None:
+            continue
+
+        area = cv2.contourArea(orig_c)
         area_frac = area / total_area
         if area_frac < MIN_AREA_FRAC or area_frac > MAX_AREA_FRAC:
             continue
-        perimeter = cv2.arcLength(c, True)
-        if perimeter == 0:
-            continue
-        circularity = 4 * np.pi * area / (perimeter ** 2)
-        if circularity < MIN_CIRCULARITY:
-            continue
-        (cx, cy), radius = cv2.minEnclosingCircle(c)
+
+        matched_orig_indices.add(orig_idx)
+        (cx, cy), radius = cv2.minEnclosingCircle(orig_c)
         candidates.append({
             "cx": cx, "cy": cy, "radius": radius,
             "area_frac": area_frac, "circularity": circularity,
