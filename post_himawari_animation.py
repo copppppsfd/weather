@@ -17,7 +17,7 @@ import requests
 from PIL import Image
 
 SECTOR = os.environ.get("HIMAWARI_SECTOR", "r2w")   # r2w = Southeast Asia (extended, large)
-      # b13 = infrared (day & night)
+BAND = os.environ.get("HIMAWARI_BAND", "b13")        # b13 = infrared (day & night)
 WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 
 BASE_URL = "https://www.data.jma.go.jp/mscweb/data/himawari/img"
@@ -37,7 +37,7 @@ def round_down_to_10min(dt: datetime) -> datetime:
 
 def fetch_frame(slot_time: datetime):
     hhmm = slot_time.strftime("%H%M")
-    url = f"{BASE_URL}/{SECTOR}/{SECTOR}_hrp_{hhmm}.jpg"
+    url = f"{BASE_URL}/{SECTOR}/{SECTOR}_{BAND}_{hhmm}.jpg"
     try:
         resp = requests.get(url, timeout=15)
     except requests.RequestException as e:
