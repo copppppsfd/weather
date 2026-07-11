@@ -25,6 +25,8 @@ jobs:
       - name: Check for a new image and post it
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          HIMAWARI_SECTOR: r2s
+          HIMAWARI_BAND: hrp
         run: python post_himawari.py
 
       - name: Commit updated state (if changed)
