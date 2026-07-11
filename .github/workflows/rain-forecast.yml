@@ -21,9 +21,9 @@ jobs:
       - name: Fetch and post forecast
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          LOCATION_LAT: '0.0'    # <-- set your latitude
-          LOCATION_LON: '0.0'    # <-- set your longitude
-          LOCATION_NAME: 'Your City'   # <-- friendly label for the message
+          LOCATION_LAT: '-6.200000'    # <-- set your latitude
+          LOCATION_LON: '106.816666'    # <-- set your longitude
+          LOCATION_NAME: 'Jakarta'   # <-- friendly label for the message
           # FORECAST_HOURS: '12'
           # RAIN_PROBABILITY_ALERT_THRESHOLD: '50'
         run: python rain_forecast.py
