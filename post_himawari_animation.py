@@ -31,11 +31,22 @@ BASE_URL = "https://www.data.jma.go.jp/mscweb/data/himawari/img"
 
 FRAME_COUNT = int(os.environ.get("ANIMATION_FRAME_COUNT", "12"))         # 12 * 10min = ~2 hours
 FRAME_DURATION_MS = int(os.environ.get("ANIMATION_FRAME_DURATION_MS", "150"))
-MAX_WIDTH = int(os.environ.get("ANIMATION_MAX_WIDTH", "600"))            # downscale to control file size
+
+# Target output width. The code now resizes both up AND down to hit this
+# (previously it only ever downscaled, so raising this past the source
+# frame's native width did nothing). Upscaling doesn't add real detail --
+# the source frame only has whatever resolution JMA published at, so this
+# just interpolates for a bigger/smoother-looking GIF, not a sharper one.
+MAX_WIDTH = int(os.environ.get("ANIMATION_MAX_WIDTH", "600"))
 
 # Discord's free-tier per-file cap is 10MB (decimal). Stay safely under it;
 # bump this up if your server has boosts or everyone posting has Nitro.
 MAX_FILE_BYTES = 9_500_000
+
+# Floors so the progressive-shrink fallback below has somewhere to land
+# even if you've set a large ANIMATION_MAX_WIDTH for a nicer-looking GIF.
+MIN_FRAMES_FLOOR = 4
+MIN_WIDTH_FLOOR = 300
 
 
 def round_down_to_10min(dt: datetime) -> datetime:
@@ -63,9 +74,9 @@ def fetch_frame(slot_time: datetime):
     except requests.RequestException as e:
         print(f"Request failed for {url}: {e}")
         return None
-        
+
     print(f"GET {url} -> {resp.status_code}")
-    
+
     if resp.status_code == 200:
         # Check the server's timestamp for this file to avoid yesterday's data
         last_mod_header = resp.headers.get("Last-Modified")
@@ -73,7 +84,7 @@ def fetch_frame(slot_time: datetime):
             try:
                 # Convert the HTTP header timestamp to a timezone-aware datetime object
                 last_mod_dt = parsedate_to_datetime(last_mod_header)
-                
+
                 # If the image on the server is more than 6 hours older than right now,
                 # it is yesterday's file still waiting to be overwritten.
                 age = datetime.now(timezone.utc) - last_mod_dt
@@ -82,9 +93,9 @@ def fetch_frame(slot_time: datetime):
                     return None
             except Exception as e:
                 print(f"   -> Could not parse Last-Modified header: {e}")
-                
+
         return resp.content
-        
+
     return None
 
 
@@ -104,13 +115,15 @@ def collect_frames():
     return frames
 
 
-def build_gif(frames) -> bytes:
+def build_gif(frames, target_width: int) -> bytes:
     images = []
     for _, data in frames:
         img = Image.open(io.BytesIO(data)).convert("RGB")
-        if img.width > MAX_WIDTH:
-            ratio = MAX_WIDTH / img.width
-            img = img.resize((MAX_WIDTH, int(img.height * ratio)), Image.LANCZOS)
+        # Resize both up and down to hit target_width -- upscaling just
+        # interpolates existing pixels, it doesn't recover extra detail.
+        if img.width != target_width:
+            ratio = target_width / img.width
+            img = img.resize((target_width, int(img.height * ratio)), Image.LANCZOS)
         images.append(img)
 
     buf = io.BytesIO()
@@ -145,21 +158,30 @@ def main():
         print(f"Only found {len(frames)} frame(s), need at least 2 for an animation.")
         return
 
-    gif_bytes = build_gif(frames)
+    target_width = MAX_WIDTH
+    gif_bytes = build_gif(frames, target_width)
 
-    # If it's too big for Discord, progressively drop frames and rebuild.
+    # If it's too big for Discord, progressively drop frames, then shrink
+    # width, before giving up -- so a large ANIMATION_MAX_WIDTH doesn't just
+    # silently fail to post once it crosses the size cap.
     attempts = 0
-    while len(gif_bytes) > MAX_FILE_BYTES and len(frames) > 4 and attempts < 4:
-        frames = frames[::2]  # keep every other frame
-        gif_bytes = build_gif(frames)
+    max_attempts = 8
+    while len(gif_bytes) > MAX_FILE_BYTES and attempts < max_attempts:
+        if len(frames) > MIN_FRAMES_FLOOR:
+            frames = frames[::2]  # keep every other frame
+        elif target_width > MIN_WIDTH_FLOOR:
+            target_width = max(int(target_width * 0.8), MIN_WIDTH_FLOOR)
+        else:
+            break
+        gif_bytes = build_gif(frames, target_width)
         attempts += 1
 
     if len(gif_bytes) > MAX_FILE_BYTES:
-        print(f"GIF still too large ({len(gif_bytes)} bytes) after reducing frames, skipping post.")
+        print(f"GIF still too large ({len(gif_bytes)} bytes) after reducing frames/width, skipping post.")
         return
 
     start_label = frames[0][0].strftime("%H:%M")
-    end_label = frames[0][0].strftime("%H:%M")
+    end_label = frames[-1][0].strftime("%H:%M")
     post_gif(gif_bytes, start_label, end_label, len(frames))
     print(f"Posted animation with {len(frames)} frames ({start_label} -> {end_label} UTC), {len(gif_bytes)} bytes")
 
