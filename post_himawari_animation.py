@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 from PIL import Image
 
-SECTOR = os.environ.get("HIMAWARI_SECTOR", "r2s")   # r2w = Southeast Asia (extended, large)
+SECTOR = os.environ.get("HIMAWARI_SECTOR", "r2w")   # r2w = Southeast Asia (extended, large)
 BAND = os.environ.get("HIMAWARI_BAND", "hrp")        # b13 = infrared (day & night)
 WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 
