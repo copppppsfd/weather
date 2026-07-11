@@ -32,7 +32,7 @@ jobs:
       - name: Check for ASWIND north
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/en/product/data/fs/aswind_fnir_{HHMM}.png
+          HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/en/product/data/fn/aswind_fnir_{HHMM}.png
         run: python post_himawari.py
 
       - name: Check for ASWIND south
