@@ -5,7 +5,7 @@ on:
     # Every 3 hours. Each run covers a ~2 hour window of frames (see
     # ANIMATION_FRAME_COUNT below), so runs overlap slightly rather than
     # leaving gaps.
-    - cron: '0 */3 * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch: {}   # manual "Run workflow" button in the Actions tab
 
 jobs:
