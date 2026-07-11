@@ -27,10 +27,20 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/en/product/data/fs/aswind_fsir_{HHMM}.png
+          # ASWind full-disk imagery refreshes every ~30 min, so the step
+          # is set to match -- otherwise most 10-min slots would just
+          # re-fetch the same still-current frame. 16 frames * 30 min = 8
+          # hours covered.
+          ANIMATION_STEP_MINUTES: '30'
+          ANIMATION_FRAME_COUNT: '16'
         run: python post_himawari_animation.py
 
       - name: Build and post animation 3
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/en/product/data/fn/aswind_fnir_{HHMM}.png
+          # Target-area ASWind imagery refreshes every ~10 min (the
+          # default step), so just extending frame count covers more time:
+          # 24 frames * 10 min = 4 hours.
+          ANIMATION_FRAME_COUNT: '24'
         run: python post_himawari_animation.py
