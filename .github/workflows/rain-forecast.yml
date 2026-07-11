@@ -18,22 +18,86 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Fetch and post forecast
+      - name: Fetch and post forecast - Jakarta
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          LOCATION_LAT: '-6.200000'    # <-- set your latitude
-          LOCATION_LON: '106.816666'    # <-- set your longitude
-          LOCATION_NAME: 'Jakarta'   # <-- friendly label for the message
+          LOCATION_LAT: '-6.200000'
+          LOCATION_LON: '106.816666'
+          LOCATION_NAME: 'Jakarta'
           # FORECAST_HOURS: '12'
           # RAIN_PROBABILITY_ALERT_THRESHOLD: '50'
         run: python rain_forecast.py
 
-      - name: Fetch and post forecast
+      - name: Fetch and post forecast - Manila
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          LOCATION_LAT: '14.599512'    # <-- set your latitude
-          LOCATION_LON: '120.984222'    # <-- set your longitude
-          LOCATION_NAME: 'Manila'   # <-- friendly label for the message
+          LOCATION_LAT: '14.599512'
+          LOCATION_LON: '120.984222'
+          LOCATION_NAME: 'Manila'
           # FORECAST_HOURS: '12'
           # RAIN_PROBABILITY_ALERT_THRESHOLD: '50'
+        run: python rain_forecast.py
+
+      - name: Fetch and post forecast - Bangkok
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '13.756331'
+          LOCATION_LON: '100.501762'
+          LOCATION_NAME: 'Bangkok'
+        run: python rain_forecast.py
+
+      - name: Fetch and post forecast - Kuala Lumpur
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '3.139003'
+          LOCATION_LON: '101.686855'
+          LOCATION_NAME: 'Kuala Lumpur'
+        run: python rain_forecast.py
+
+      - name: Fetch and post forecast - Singapore
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '1.352083'
+          LOCATION_LON: '103.819836'
+          LOCATION_NAME: 'Singapore'
+        run: python rain_forecast.py
+
+      - name: Fetch and post forecast - Hanoi
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '21.027763'
+          LOCATION_LON: '105.834160'
+          LOCATION_NAME: 'Hanoi'
+        run: python rain_forecast.py
+
+      - name: Fetch and post forecast - Phnom Penh
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '11.556374'
+          LOCATION_LON: '104.928210'
+          LOCATION_NAME: 'Phnom Penh'
+        run: python rain_forecast.py
+
+      - name: Fetch and post forecast - Vientiane
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '17.975706'
+          LOCATION_LON: '102.633104'
+          LOCATION_NAME: 'Vientiane'
+        run: python rain_forecast.py
+
+      - name: Fetch and post forecast - Bandar Seri Begawan
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '4.903052'
+          LOCATION_LON: '114.939821'
+          LOCATION_NAME: 'Bandar Seri Begawan'
+        run: python rain_forecast.py
+
+      - name: Fetch and post forecast - Naypyidaw
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '19.763306'
+          LOCATION_LON: '96.078510'
+          LOCATION_NAME: 'Naypyidaw'
         run: python rain_forecast.py
