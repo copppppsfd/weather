@@ -30,5 +30,11 @@ jobs:
       - name: Build and post animation 2
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/data/himawari/img/r2w/r2w_hrp_{HHMM}.jpg
+          HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/en/product/data/fs/aswind_fsir_{HHMM}.png
+        run: python post_himawari_animation.py
+        
+      - name: Build and post animation 3
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/en/product/data/fs/aswind_fnir_{HHMM}.png
         run: python post_himawari_animation.py
