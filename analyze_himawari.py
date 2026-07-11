@@ -244,7 +244,7 @@ def annotate(img, candidates):
         trail = c.get("trail", [])
         pts = [(int(p["cx"]), int(p["cy"])) for p in trail] + [(int(c["cx"]), int(c["cy"]))]
         for j in range(len(pts) - 1):
-            cv2.line(out, pts[j], pts[j + 1], (0, 165, 255), 2, cv2.LINE_AA)
+            cv2.line(out, pts[j], pts[j + 1], (0, 165, 255), 5, cv2.LINE_AA)
         center = (int(c["cx"]), int(c["cy"]))
         radius = max(int(c["radius"]), 5)
         cv2.circle(out, center, radius, (0, 0, 255), 2)
