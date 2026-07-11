@@ -12,6 +12,7 @@ Source: https://www.data.jma.go.jp/mscweb/data/himawari/
 import io
 import os
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 
 import requests
 from PIL import Image
@@ -62,8 +63,29 @@ def fetch_frame(slot_time: datetime):
     except requests.RequestException as e:
         print(f"Request failed for {url}: {e}")
         return None
+        
     print(f"GET {url} -> {resp.status_code}")
-    return resp.content if resp.status_code == 200 else None
+    
+    if resp.status_code == 200:
+        # Check the server's timestamp for this file to avoid yesterday's data
+        last_mod_header = resp.headers.get("Last-Modified")
+        if last_mod_header:
+            try:
+                # Convert the HTTP header timestamp to a timezone-aware datetime object
+                last_mod_dt = parsedate_to_datetime(last_mod_header)
+                
+                # If the image on the server is more than 6 hours older than right now,
+                # it is yesterday's file still waiting to be overwritten.
+                age = datetime.now(timezone.utc) - last_mod_dt
+                if age > timedelta(hours=6):
+                    print(f"   -> Skipping: Stale image from {age.total_seconds()/3600:.1f} hours ago.")
+                    return None
+            except Exception as e:
+                print(f"   -> Could not parse Last-Modified header: {e}")
+                
+        return resp.content
+        
+    return None
 
 
 def collect_frames():
