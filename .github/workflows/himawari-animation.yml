@@ -2,7 +2,7 @@ name: Post Himawari Animation
 
 on:
   schedule:
-    # Every 3 hours. Each run covers a ~2 hour window of frames (see
+    # Every 10 menit. Each run covers a ~2 hour window of frames (see
     # ANIMATION_FRAME_COUNT below), so runs overlap slightly rather than
     # leaving gaps.
     - cron: '*/10 * * * *'
