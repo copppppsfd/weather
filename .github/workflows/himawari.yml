@@ -27,7 +27,9 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           HIMAWARI_SECTOR: r2w
           HIMAWARI_BAND: hrp
+          HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/en/product/data/fs/aswind_fsir_{HHMM}.png
         run: python post_himawari.py
+        
 
       - name: Commit updated state (if changed)
         run: |
