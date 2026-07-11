@@ -1,0 +1,44 @@
+name: Himawari Storm/Typhoon Scan
+
+on:
+  schedule:
+    # Every 30 minutes -- frequent enough to build a meaningful trail,
+    # infrequent enough not to spam the channel.
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}   # manual "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write   # needed to commit the state/history files back
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests opencv-python-headless numpy
+
+      - name: Scan for storm/typhoon candidates
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          HIMAWARI_SECTOR: r2w
+          HIMAWARI_BAND: b13
+          # Uncomment to tune detection sensitivity:
+          # STORM_BRIGHTNESS_PERCENTILE: '97'
+          # STORM_MIN_CIRCULARITY: '0.55'
+          # STORM_MAX_MATCH_DIST_FRAC: '0.08'
+          # STORM_TRAIL_LENGTH: '6'
+        run: python analyze_himawari.py
+
+      - name: Commit updated state (if changed)
+        run: |
+          git config user.name "himawari-bot"
+          git config user.email "actions@github.com"
+          git add last_storm_slot.txt storm_history.json
+          git diff --staged --quiet || git commit -m "Update storm scan state"
+          git push
