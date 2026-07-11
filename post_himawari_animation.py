@@ -28,7 +28,7 @@ URL_TEMPLATE = os.environ.get("HIMAWARI_URL_TEMPLATE")
 
 BASE_URL = "https://www.data.jma.go.jp/mscweb/data/himawari/img"
 
-FRAME_COUNT = int(os.environ.get("ANIMATION_FRAME_COUNT", "12"))         # 12 * 10min = ~2 hours
+FRAME_COUNT = int(os.environ.get("ANIMATION_FRAME_COUNT", "14"))         # 12 * 10min = ~2 hours
 FRAME_DURATION_MS = int(os.environ.get("ANIMATION_FRAME_DURATION_MS", "150"))
 MAX_WIDTH = int(os.environ.get("ANIMATION_MAX_WIDTH", "600"))            # downscale to control file size
 
