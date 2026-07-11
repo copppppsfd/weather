@@ -147,10 +147,12 @@ def load_history():
 
 
 def save_history(slot_label: str, candidates):
-    # Store only what's needed to keep tracking on the next run.
+    # Store enough to keep tracking on the next run and let other scripts
+    # (e.g. a storm-cam animator) size a crop box around a candidate.
     slim = [
         {
-            "cx": c["cx"], "cy": c["cy"],
+            "cx": c["cx"], "cy": c["cy"], "radius": c["radius"],
+            "area_frac": c["area_frac"],
             "trail": c.get("trail", []),
             "tracked_scans": c.get("tracked_scans", 1),
         }
