@@ -39,8 +39,18 @@ URL_TEMPLATE = os.environ.get("HIMAWARI_URL_TEMPLATE")
 
 BASE_URL = "https://www.data.jma.go.jp/mscweb/data/himawari/img"
 
-FRAME_COUNT = int(os.environ.get("ANIMATION_FRAME_COUNT", "12"))         # 12 * 10min = ~2 hours
+FRAME_COUNT = int(os.environ.get("ANIMATION_FRAME_COUNT", "12"))         # 12 * step = time span covered
 FRAME_DURATION_MS = int(os.environ.get("ANIMATION_FRAME_DURATION_MS", "150"))
+
+# Minutes between frame slots. Different JMA products refresh at different
+# cadences -- e.g. ASWind full-disk imagery updates every 30 min while its
+# target-area imagery updates every 10 min -- so this needs to match
+# whatever product HIMAWARI_URL_TEMPLATE actually points at. Getting this
+# wrong doesn't error out; it just wastes lookback fetching slots that
+# don't exist yet, or re-fetching a frame that hasn't changed since the
+# last one (a stale/frozen-looking repeat in the loop), so it's silent if
+# you don't check for it.
+STEP_MINUTES = int(os.environ.get("ANIMATION_STEP_MINUTES", "10"))
 
 # Target output width. Resizes both up and down to hit this. Upscaling
 # doesn't add real detail -- the source frame only has whatever resolution
@@ -68,8 +78,9 @@ MIN_FRAMES_FLOOR = 4
 MIN_WIDTH_FLOOR = 300
 
 
-def round_down_to_10min(dt: datetime) -> datetime:
-    return dt.replace(minute=(dt.minute // 10) * 10, second=0, microsecond=0)
+def round_down_to_step(dt: datetime) -> datetime:
+    minute = (dt.minute // STEP_MINUTES) * STEP_MINUTES
+    return dt.replace(minute=minute, second=0, microsecond=0)
 
 
 def url_for_slot(slot_time: datetime) -> str:
@@ -116,11 +127,11 @@ def fetch_frame(slot_time: datetime):
 
 def collect_frames():
     """Fetch up to FRAME_COUNT most recent available frames, oldest first."""
-    now = round_down_to_10min(datetime.now(timezone.utc))
+    now = round_down_to_step(datetime.now(timezone.utc))
     frames = []
     lookback = FRAME_COUNT + 6  # search a bit further back in case some slots are missing
     for i in range(lookback):
-        slot_time = now - timedelta(minutes=10 * i)
+        slot_time = now - timedelta(minutes=STEP_MINUTES * i)
         data = fetch_frame(slot_time)
         if data:
             frames.append((slot_time, data))
