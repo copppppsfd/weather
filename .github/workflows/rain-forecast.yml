@@ -1,0 +1,29 @@
+name: Rain Forecast (Open-Meteo)
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'   # every 3 hours -- forecasts don't change fast enough to need more
+  workflow_dispatch: {}       # manual "Run workflow" button in the Actions tab
+
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch and post forecast
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '0.0'    # <-- set your latitude
+          LOCATION_LON: '0.0'    # <-- set your longitude
+          LOCATION_NAME: 'Your City'   # <-- friendly label for the message
+          # FORECAST_HOURS: '12'
+          # RAIN_PROBABILITY_ALERT_THRESHOLD: '50'
+        run: python rain_forecast.py
