@@ -20,6 +20,12 @@ SECTOR = os.environ.get("HIMAWARI_SECTOR", "r2w")   # r2w = Southeast Asia (exte
 BAND = os.environ.get("HIMAWARI_BAND", "hrp")        # b13 = infrared (day & night)
 WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 
+# Optional: fully override the URL pattern instead of using SECTOR/BAND.
+# Use {HHMM} where the 4-digit UTC time slot (e.g. 2330) should go.
+# Example (ASWind product, a different directory/naming scheme entirely):
+#   HIMAWARI_URL_TEMPLATE=https://www.data.jma.go.jp/mscweb/en/product/data/fs/aswind_fsir_{HHMM}.png
+URL_TEMPLATE = os.environ.get("HIMAWARI_URL_TEMPLATE")
+
 BASE_URL = "https://www.data.jma.go.jp/mscweb/data/himawari/img"
 
 FRAME_COUNT = int(os.environ.get("ANIMATION_FRAME_COUNT", "12"))         # 12 * 10min = ~2 hours
@@ -35,14 +41,28 @@ def round_down_to_10min(dt: datetime) -> datetime:
     return dt.replace(minute=(dt.minute // 10) * 10, second=0, microsecond=0)
 
 
-def fetch_frame(slot_time: datetime):
+def url_for_slot(slot_time: datetime) -> str:
     hhmm = slot_time.strftime("%H%M")
-    url = f"{BASE_URL}/{SECTOR}/{SECTOR}_{BAND}_{hhmm}.jpg"
+    if URL_TEMPLATE:
+        return URL_TEMPLATE.format(HHMM=hhmm)
+    return f"{BASE_URL}/{SECTOR}/{SECTOR}_{BAND}_{hhmm}.jpg"
+
+
+def product_id() -> str:
+    if URL_TEMPLATE:
+        name = URL_TEMPLATE.rstrip("/").split("/")[-1]
+        return name.replace("{HHMM}", "HHMM")
+    return f"{SECTOR}_{BAND}"
+
+
+def fetch_frame(slot_time: datetime):
+    url = url_for_slot(slot_time)
     try:
         resp = requests.get(url, timeout=15)
     except requests.RequestException as e:
         print(f"Request failed for {url}: {e}")
         return None
+    print(f"GET {url} -> {resp.status_code}")
     return resp.content if resp.status_code == 200 else None
 
 
