@@ -1,0 +1,32 @@
+name: Himawari Storm Cam
+
+on:
+  schedule:
+    # Hourly -- reads whatever the storm-scan workflow (every 30 min) has
+    # most recently committed to storm_history.json.
+    - cron: '0 * * * *'
+  workflow_dispatch: {}   # manual "Run workflow" button in the Actions tab
+
+jobs:
+  storm-cam:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4   # just needs to read storm_history.json, no commit-back needed
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pillow
+
+      - name: Build and post storm-cam loop
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          HIMAWARI_SECTOR: r2w
+          HIMAWARI_BAND: b13
+          # Uncomment to tune:
+          # STORM_CAM_MIN_TRACKED_SCANS: '2'
+          # STORM_CAM_CROP_RADIUS_MULTIPLIER: '6'
+          # STORM_CAM_OUTPUT_SIZE: '400'
+        run: python post_storm_cam.py
