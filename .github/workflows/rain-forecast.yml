@@ -27,3 +27,13 @@ jobs:
           # FORECAST_HOURS: '12'
           # RAIN_PROBABILITY_ALERT_THRESHOLD: '50'
         run: python rain_forecast.py
+
+      - name: Fetch and post forecast
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LOCATION_LAT: '14.599512'    # <-- set your latitude
+          LOCATION_LON: '120.984222'    # <-- set your longitude
+          LOCATION_NAME: 'Manila'   # <-- friendly label for the message
+          # FORECAST_HOURS: '12'
+          # RAIN_PROBABILITY_ALERT_THRESHOLD: '50'
+        run: python rain_forecast.py
