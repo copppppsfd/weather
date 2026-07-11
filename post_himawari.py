@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 SECTOR = os.environ.get("HIMAWARI_SECTOR", "r2w")   # r2w = Southeast Asia (extended, large)
-BAND = os.environ.get("HIMAWARI_BAND", "b13")        # b13 = infrared (day & night)
+BAND = os.environ.get("HIMAWARI_BAND", "hrp")        # b13 = infrared (day & night)
 WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 
 BASE_URL = "https://www.data.jma.go.jp/mscweb/data/himawari/img"
