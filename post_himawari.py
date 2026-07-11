@@ -12,6 +12,7 @@ Source: https://www.data.jma.go.jp/mscweb/data/himawari/
 import mimetypes
 import os
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 
 import requests
 
@@ -28,6 +29,15 @@ URL_TEMPLATE = os.environ.get("HIMAWARI_URL_TEMPLATE")
 BASE_URL = "https://www.data.jma.go.jp/mscweb/data/himawari/img"
 STATE_FILE = "last_slot.txt"
 MAX_LOOKBACK_STEPS = int(os.environ.get("MAX_LOOKBACK_STEPS", "6"))  # 6 * 10min = up to 1 hour back
+
+# JMA's rolling 24h archive re-uses the same date-less filename every day, so
+# a URL always returns HTTP 200 -- even before today's frame for that slot
+# has been published, in which case it's still serving yesterday's frame at
+# the same time-of-day. A 200 status alone can't tell fresh from a day-old
+# leftover; we cross-check the Last-Modified header against the slot we
+# actually asked for. Real processing lag is usually a few minutes, so a
+# generous tolerance here still easily catches a ~24h-stale file.
+STALENESS_TOLERANCE_MIN = int(os.environ.get("STALENESS_TOLERANCE_MIN", "45"))
 
 
 def round_down_to_10min(dt: datetime) -> datetime:
@@ -62,9 +72,32 @@ def product_id() -> str:
     return f"{SECTOR}_{BAND}"
 
 
+def is_fresh(resp, slot_time: datetime) -> bool:
+    """Check the file's Last-Modified header against the slot we requested,
+    to detect JMA serving an unrefreshed (previous day's) frame."""
+    last_modified = resp.headers.get("Last-Modified")
+    if not last_modified:
+        print("  No Last-Modified header returned -- can't verify freshness, accepting anyway.")
+        return True
+    try:
+        lm_dt = parsedate_to_datetime(last_modified)
+        if lm_dt.tzinfo is None:
+            lm_dt = lm_dt.replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError) as e:
+        print(f"  Could not parse Last-Modified header ({last_modified!r}): {e}, accepting anyway.")
+        return True
+
+    age = slot_time - lm_dt  # how much older the file is than the slot we requested
+    print(f"  Last-Modified: {last_modified} (file is {age} relative to the requested slot)")
+    if age > timedelta(minutes=STALENESS_TOLERANCE_MIN):
+        print("  Stale -- JMA hasn't refreshed this slot yet (still showing an older frame). Trying an earlier slot.")
+        return False
+    return True
+
+
 def fetch_latest_image():
-    """Walk backwards in 10-min UTC steps until an image tile is found.
-    Returns (image_bytes, slot_label, resolved_url) or (None, None, None)."""
+    """Walk backwards in 10-min UTC steps until a genuinely fresh image tile
+    is found. Returns (image_bytes, slot_label, resolved_url) or (None, None, None)."""
     now = round_down_to_10min(datetime.now(timezone.utc))
     for i in range(MAX_LOOKBACK_STEPS):
         slot_time = now - timedelta(minutes=10 * i)
@@ -75,9 +108,12 @@ def fetch_latest_image():
             print(f"Request failed for {url}: {e}")
             continue
         print(f"GET {url} -> {resp.status_code}")
-        if resp.status_code == 200:
-            slot_label = slot_time.strftime("%Y-%m-%d %H:%M UTC")
-            return resp.content, slot_label, url
+        if resp.status_code != 200:
+            continue
+        if not is_fresh(resp, slot_time):
+            continue
+        slot_label = slot_time.strftime("%Y-%m-%d %H:%M UTC")
+        return resp.content, slot_label, url
     return None, None, None
 
 
