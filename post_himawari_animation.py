@@ -70,7 +70,7 @@ def collect_frames():
     """Fetch up to FRAME_COUNT most recent available frames, oldest first."""
     now = round_down_to_10min(datetime.now(timezone.utc))
     frames = []
-    lookback = FRAME_COUNT + 5  # search a bit further back in case some slots are missing
+    lookback = FRAME_COUNT + 6  # search a bit further back in case some slots are missing
     for i in range(lookback):
         slot_time = now - timedelta(minutes=10 * i)
         data = fetch_frame(slot_time)
@@ -137,7 +137,7 @@ def main():
         return
 
     start_label = frames[0][0].strftime("%H:%M")
-    end_label = frames[0][0].strftime("%H:%M")
+    end_label = frames[-1][0].strftime("%H:%M")
     post_gif(gif_bytes, start_label, end_label, len(frames))
     print(f"Posted animation with {len(frames)} frames ({start_label} -> {end_label} UTC), {len(gif_bytes)} bytes")
 
