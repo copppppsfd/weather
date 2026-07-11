@@ -137,7 +137,7 @@ def main():
         return
 
     start_label = frames[0][0].strftime("%H:%M")
-    end_label = frames[-1][0].strftime("%H:%M")
+    end_label = frames[0][0].strftime("%H:%M")
     post_gif(gif_bytes, start_label, end_label, len(frames))
     print(f"Posted animation with {len(frames)} frames ({start_label} -> {end_label} UTC), {len(gif_bytes)} bytes")
 
