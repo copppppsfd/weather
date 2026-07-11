@@ -1,5 +1,4 @@
 name: Post Himawari Animation
-
 on:
   schedule:
     # Every 10 menit. Each run covers a ~2 hour window of frames (see
@@ -7,32 +6,29 @@ on:
     # leaving gaps.
     - cron: '*/10 * * * *'
   workflow_dispatch: {}   # manual "Run workflow" button in the Actions tab
-
 jobs:
   post:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: pip install requests pillow
-
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Build and post animation
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/data/himawari/img/r2w/r2w_snd_{HHMM}.jpg
         run: python post_himawari_animation.py
-
       - name: Build and post animation 2
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           HIMAWARI_URL_TEMPLATE: https://www.data.jma.go.jp/mscweb/en/product/data/fs/aswind_fsir_{HHMM}.png
         run: python post_himawari_animation.py
-        
+
       - name: Build and post animation 3
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
