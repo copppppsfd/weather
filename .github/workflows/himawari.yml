@@ -25,8 +25,8 @@ jobs:
       - name: Check for a new image and post it
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          HIMAWARI_SECTOR: r2w
-          HIMAWARI_BAND: hrp
+          HIMAWARI_SECTOR: r2s
+          HIMAWARI_BAND: snd
         run: python post_himawari.py
 
       - name: Check for ASWIND north
