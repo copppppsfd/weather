@@ -1,0 +1,29 @@
+name: Tropical Outlook
+
+on:
+  schedule:
+    # Every 2 days at 00:00 UTC. Note: this runs on even days-of-month
+    # (2nd, 4th, 6th...), which drifts slightly at month boundaries (e.g.
+    # Jan 31 -> Feb 2 is a 2-day gap, but Feb 28 -> Mar 2 is also a 2-day
+    # gap while Feb 2 -> Feb 4 etc. stay clean) -- close enough for "every
+    # couple of days", not perfectly exact 48h spacing.
+    - cron: '0 0 */2 * *'
+  workflow_dispatch: {}   # manual "Run workflow" button in the Actions tab
+
+jobs:
+  outlook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch and post tropical outlook
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python tropical_outlook.py
